@@ -12,6 +12,9 @@ class Sound:
         self.npc_shot = pg.mixer.Sound(self.path + 'tir_pistolet.mp3')
         self.player_pain = pg.mixer.Sound(self.path + 'player_pain.wav')
         self.feu = pg.mixer.Sound(self.path + 'feu.mp3')
+        
+        # AJOUT DU SON POUR LE PISTOLET DU JOUEUR
+        self.tir_pistolet = pg.mixer.Sound(self.path + 'tir_pistolet.mp3')
 
         # RÉGLAGE VOLUME BAS POUR ÉVITER LA DISTORSION
         self.set_volume(0.2) 
@@ -23,6 +26,8 @@ class Sound:
         self.npc_shot.set_volume(volume)
         self.player_pain.set_volume(volume)
         self.feu.set_volume(volume)
+        # Réglage volume pour le pistolet
+        self.tir_pistolet.set_volume(volume)
 
     def play_menu_music(self):
         pg.mixer.music.load(self.path + 'menu.mp3')

@@ -12,7 +12,6 @@ class Player:
         self.rel = 0
         self.health_recovery_delay = 700
         self.time_prev = pg.time.get_ticks()
-        # --- MUNITIONS SÉPARÉES ---
         self.ammo = {'shotgun': 20, 'pistolet': 50}
         pg.mouse.set_visible(False)
 
@@ -45,12 +44,46 @@ class Player:
         if event.type == pg.KEYDOWN:
             if event.key == pg.K_SPACE:
                 self.fire()
+            if event.key == pg.K_e:
+                self.interact()
+
+    def interact(self):
+        sin_a = math.sin(self.angle)
+        cos_a = math.cos(self.angle)
+        check_x = int(self.x + cos_a * 0.5)
+        check_y = int(self.y + sin_a * 0.5)
+        
+        if (check_x, check_y) in self.game.map.world_map:
+            if self.game.map.world_map[(check_x, check_y)] == 11:
+                # VÉRIFICATION : Reste-t-il des monstres vivants ?
+                enemies_alive = any(npc.alive for npc in self.game.object_handler.npc_list)
+                
+                if not enemies_alive:
+                    # VICTOIRE
+                    self.game.object_renderer.victory_mode = True
+                else:
+                    # ÉCHEC : Dégâts éclairs (20 points)
+                    self.get_damage(20)
+                    self.game.object_renderer.trigger_lightning_trap()
+
+    def check_interaction(self):
+        sin_a = math.sin(self.angle)
+        cos_a = math.cos(self.angle)
+        check_x = int(self.x + cos_a * 0.5)
+        check_y = int(self.y + sin_a * 0.5)
+        if (check_x, check_y) in self.game.map.world_map and \
+           self.game.map.world_map[(check_x, check_y)] == 11:
+            self.game.object_renderer.show_interact_msg = True
+        else:
+            self.game.object_renderer.show_interact_msg = False
 
     def fire(self):
         current_weapon = self.game.weapon.current_weapon
-        # Vérifie les munitions de l'arme actuelle
         if not self.shot and not self.game.weapon.reloading and self.ammo[current_weapon] > 0:
-            self.game.sound.shotgun.play()
+            if current_weapon == 'pistolet':
+                self.game.sound.tir_pistolet.play()
+            else:
+                self.game.sound.shotgun.play()
             self.shot = True
             self.game.weapon.reloading = True
             self.ammo[current_weapon] -= 1 
@@ -62,7 +95,6 @@ class Player:
         speed = PLAYER_SPEED * self.game.delta_time
         speed_sin = speed * sin_a
         speed_cos = speed * cos_a
-
         keys = pg.key.get_pressed()
         if keys[pg.K_z]:
             dx += speed_cos
@@ -74,9 +106,7 @@ class Player:
             self.angle -= PLAYER_ROT_SPEED * self.game.delta_time
         if keys[pg.K_d]:
             self.angle += PLAYER_ROT_SPEED * self.game.delta_time
-
         self.check_wall_collision(dx, dy)
-
         if keys[pg.K_LEFT]:
             self.angle -= PLAYER_ROT_SPEED * self.game.delta_time
         if keys[pg.K_RIGHT]:
@@ -96,9 +126,9 @@ class Player:
     def update(self):
         self.movement()
         self.recover_health()
+        self.check_interaction()
 
     @property
     def pos(self): return self.x, self.y
-
     @property
     def map_pos(self): return int(self.x), int(self.y)

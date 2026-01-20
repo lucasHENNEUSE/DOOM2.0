@@ -61,13 +61,8 @@ class ObjectHandler:
             self.add_npc(enemy)
 
     def check_win(self):
-        if not any(npc.alive for npc in self.npc_list):
-            self.game.object_renderer.win()
-            pg.display.flip()
-            pg.time.delay(3000)
-            self.game.menu_active = True
-            pg.mouse.set_visible(True)
-            self.game.video = cv2.VideoCapture('resources/sprites/doom.mp4')
+        # Désactivé : c'est maintenant l'interrupteur qui gère la fin de partie
+        pass
 
     def update(self):
         self.npc_positions = {npc.map_pos for npc in self.npc_list if npc.alive}
