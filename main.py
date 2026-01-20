@@ -33,9 +33,11 @@ class Game:
         
         self.menu_active = True
         self.difficulty_menu_active = False
+        self.loading_active = False 
         
         self.start_time = pg.time.get_ticks() 
         self.text_delay = 8000 
+        self.loading_start_time = 0 
 
         self.difficulty_options = ['FACILE', 'MEDIUM', 'DIFFICILE']
         self.difficulty_index = 0
@@ -44,20 +46,12 @@ class Game:
         self.video = cv2.VideoCapture('resources/sprites/doom.mp4')
         self.last_frame = None 
         
-        # --- LOGO OPAQUE AU BORD EXTRÊME ---
         logo_img = pg.image.load('resources/sprites/l.png').convert_alpha()
-        
-        # Taille du logo
         self.logo_size = 180
         self.logo_overlay = pg.transform.smoothscale(logo_img, (self.logo_size, self.logo_size))
-        
-        # On s'assure que l'alpha est au maximum (Opaque)
         self.logo_overlay.set_alpha(255) 
-        
-        # Position : Bord extrême avec une marge de 5 pixels
         self.logo_pos = (WIDTH - self.logo_size - 5, HEIGHT - self.logo_size - 5)
         
-        # Curseur
         tm_img = pg.image.load('resources/sprites/tm.png').convert_alpha()
         self.skull_cursor = pg.transform.scale(tm_img, (60, 60))
         
@@ -100,7 +94,6 @@ class Game:
         if self.last_frame:
             self.screen.blit(self.last_frame, (0, 0))
         
-        # Affichage du logo opaque
         self.screen.blit(self.logo_overlay, self.logo_pos)
         
         current_time = pg.time.get_ticks()
@@ -137,24 +130,33 @@ class Game:
                         selected_diff = self.difficulty_options[self.difficulty_index]
                         self.difficulty_menu_active = False
                         self.new_game(selected_diff)
+                        
+                        # --- DÉMARRAGE DU CHARGEMENT ---
+                        self.loading_active = True
+                        self.loading_start_time = pg.time.get_ticks()
+                        
                         pg.mouse.set_visible(False)
                         pg.event.set_grab(True)
-                        self.sound.play_theme()
-            else:
+            
+            elif not self.loading_active:
                 if event.type == self.global_event:
                     self.global_trigger = True
-                
-                # CHANGEMENT D'ARME AVEC TOUCHE R
                 if event.type == pg.KEYDOWN and event.key == pg.K_r:
                     self.weapon.change_weapon()
-                    
                 self.player.single_fire_event(event)
 
     def update(self):
-        self.player.update()
-        self.raycasting.update()
-        self.object_handler.update()
-        self.weapon.update()
+        if self.loading_active:
+            # --- MODIFICATION ICI : 10000 ms = 10 secondes ---
+            if pg.time.get_ticks() - self.loading_start_time > 10000:
+                self.loading_active = False
+                self.sound.play_theme()
+        else:
+            self.player.update()
+            self.raycasting.update()
+            self.object_handler.update()
+            self.weapon.update()
+            
         self.delta_time = self.clock.tick(FPS)
         pg.display.set_caption(f'FPS: {self.clock.get_fps() :.1f}')
 
@@ -167,6 +169,10 @@ class Game:
             elif self.difficulty_menu_active:
                 self.draw_difficulty_menu()
                 self.clock.tick(60)
+            elif self.loading_active:
+                self.update() # Indispensable pour que le chrono avance
+                self.object_renderer.draw_loading_screen()
+                pg.display.flip()
             else:
                 self.update()
                 self.object_renderer.draw()

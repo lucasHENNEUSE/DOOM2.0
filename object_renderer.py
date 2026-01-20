@@ -17,13 +17,16 @@ class ObjectRenderer:
         
         self.font = pg.font.SysFont('Arial', 50, bold=True)
         self.pickup_font = pg.font.SysFont('Arial', 40, bold=True)
-        self.mission_font = pg.font.SysFont('Arial', 60, bold=True) # Police message erreur
+        self.mission_font = pg.font.SysFont('Arial', 60, bold=True)
+        
+        self.consignes_img = self.get_texture('resources/textures/consignes.png', RES)
+        self.text_font = pg.font.SysFont('Arial', 35, bold=True)
+        self.load_font = pg.font.SysFont('Arial', 50, bold=True)
         
         self.button_off = self.get_texture('resources/textures/b0.png')
         self.button_on = self.get_texture('resources/textures/b1.png')
         self.interact_font = pg.font.SysFont('Arial', 30, bold=True)
         
-        # --- ÉCLAIRS ET PIÈGE ---
         self.lightning_images = [
             self.get_texture('resources/textures/e0.png', RES),
             self.get_texture('resources/textures/e1.png', RES)
@@ -43,6 +46,31 @@ class ObjectRenderer:
         self.wall_11 = self.get_texture('resources/textures/11.png')
         self.wall_anim_speed = 500
 
+    def draw_loading_screen(self):
+        self.screen.blit(self.consignes_img, (0, 0))
+        
+        lines = [
+            "Pour te déplacer, sers-toi des touches : Z, Q, S, D",
+            "Pour tirer : ESPACE",
+            "Pour changer d'arme : R",
+            "Pour interagir : E",
+            "",
+            "Objectif : Accomplis ta mission avant d'activer",
+            "l'interrupteur, sinon tu vas le regretter !!",
+        ]
+        
+        for i, line in enumerate(lines):
+            color = 'yellow' if "Objectif" in line else 'white'
+            txt = self.text_font.render(line, True, color)
+            txt_rect = txt.get_rect(center=(WIDTH // 2, HEIGHT // 3 + i * 55))
+            self.screen.blit(txt, txt_rect)
+
+        num_dots = (pg.time.get_ticks() // 500) % 4
+        dots = "." * num_dots
+        load_txt = self.load_font.render(f"Chargement{dots}", True, 'white')
+        load_rect = load_txt.get_rect(bottomright=(WIDTH - 50, HEIGHT - 50))
+        self.screen.blit(load_txt, load_rect)
+
     def draw(self):
         self.update_wall_animation()
         self.draw_background()
@@ -51,15 +79,12 @@ class ObjectRenderer:
         self.draw_player_ammo()
         self.draw_pickup_message()
         
-        # Message E
         if self.show_interact_msg and not self.victory_mode:
             msg = self.interact_font.render("APPUYEZ SUR E POUR TERMINER", True, 'white')
             msg_rect = msg.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 100))
             self.screen.blit(msg, msg_rect)
             
-        # Effet Éclairs et Message Mission
         self.draw_lightning_trap()
-
         if self.victory_mode:
             self.win()
 
@@ -70,12 +95,9 @@ class ObjectRenderer:
     def draw_lightning_trap(self):
         if self.lightning_trigger:
             time_now = pg.time.get_ticks()
-            if time_now - self.lightning_time < 1000: # Durée 1 seconde
-                # Faire clignoter e0 et e1
+            if time_now - self.lightning_time < 1000:
                 img = self.lightning_images[(time_now // 100) % 2]
                 self.screen.blit(img, (0, 0))
-                
-                # Message en rouge
                 msg = self.mission_font.render("TU DOIS FINIR TA MISSION !", True, 'red')
                 msg_rect = msg.get_rect(center=(WIDTH // 2, HEIGHT // 2))
                 self.screen.blit(msg, msg_rect)
@@ -92,8 +114,6 @@ class ObjectRenderer:
             self.wall_textures[11] = self.button_off
         else:
             self.wall_textures[11] = self.button_on
-
-    # ... (reste des fonctions draw_player_health, etc. inchangées)
 
     def draw_pickup_message(self):
         if self.show_pickup_msg:
