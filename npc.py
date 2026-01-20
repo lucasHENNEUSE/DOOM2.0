@@ -1,3 +1,4 @@
+import pygame as pg
 from sprite_object import *
 from random import randint, random
 import math
@@ -50,7 +51,7 @@ class NPC(AnimatedSprite):
         self.attack_dist = randint(3, 6)
         self.speed = 0.03
         self.size = 20
-        self.health = 100 # Cette valeur sera modifiée par ObjectHandler selon la difficulté
+        self.health = 100 
         self.attack_damage = 10
         self.accuracy = 0.15
         self.alive = True
@@ -66,10 +67,16 @@ class NPC(AnimatedSprite):
 
     def animate_death(self):
         if not self.alive:
+            # On anime la chute tant qu'on n'a pas atteint la dernière image
             if self.game.global_trigger and self.frame_counter < len(self.death_images) - 1:
                 self.death_images.rotate(-1)
                 self.image = self.death_images[0]
                 self.frame_counter += 1
+            
+            # Une fois l'animation finie, on force l'affichage de POSSU0
+            if self.frame_counter >= len(self.death_images) - 1:
+                # On bloque sur la dernière image de la liste (qui doit être POSSU0)
+                self.image = self.death_images[0]
 
     def run_logic(self):
         if self.alive:
@@ -86,7 +93,8 @@ class NPC(AnimatedSprite):
                     self.animate(self.walk_images)
                     self.movement()
             else: self.animate(self.idle_images)
-        else: self.animate_death()
+        else:
+            self.animate_death()
 
     @property
     def map_pos(self): return int(self.x), int(self.y)
@@ -112,6 +120,7 @@ class NPC(AnimatedSprite):
                 self.health -= self.game.weapon.damage
                 if self.health < 1:
                     self.alive = False
+                    self.frame_counter = 0 # Crucial : on repart de zéro pour la mort
                     self.game.sound.npc_death.play()
 
     def movement(self):
@@ -163,7 +172,6 @@ class MVNPC(NPC):
     def attack(self):
         now = pg.time.get_ticks()
         if self.animation_trigger and now - self.last_attack_time > self.attack_cooldown:
-            # Utilisation du son feu.mp3 chargé dans Sound
             self.game.sound.feu.play()
             fire = Fireball(self.game, pos=(self.x, self.y))
             self.game.object_handler.add_sprite(fire)

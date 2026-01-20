@@ -143,6 +143,11 @@ class Game:
             else:
                 if event.type == self.global_event:
                     self.global_trigger = True
+                
+                # CHANGEMENT D'ARME AVEC TOUCHE R
+                if event.type == pg.KEYDOWN and event.key == pg.K_r:
+                    self.weapon.change_weapon()
+                    
                 self.player.single_fire_event(event)
 
     def update(self):

@@ -1,6 +1,7 @@
 from sprite_object import *
 from npc import *
 from random import choices, randrange
+import cv2
 
 class ObjectHandler:
     def __init__(self, game, difficulty='MEDIUM'):
@@ -24,11 +25,29 @@ class ObjectHandler:
         else: # DIFFICILE
             self.enemies = 20
             self.npc_types = [SoldierNPC, CacoDemonNPC, CyberDemonNPC, MVNPC]
-            self.weights = [20, 30, 20, 30] # Plus de monstres d'élite
+            self.weights = [20, 30, 20, 30] 
             self.base_hp = 100
 
         self.restricted_area = {(i, j) for i in range(10) for j in range(10)}
         self.spawn_npc()
+        self.spawn_ammo() # On génère les munitions sur la map
+
+    def spawn_ammo(self):
+        # On définit les deux munitions : image 0 (shotgun) et image 1 (pistolet)
+        ammo_configs = [
+            {'path': 'resources/sprites/weapon/munition/0.png', 'type': 'shotgun', 'amount': 10},
+            {'path': 'resources/sprites/weapon/munition/1.png', 'type': 'pistolet', 'amount': 20}
+        ]
+        
+        for config in ammo_configs:
+            pos = x, y = randrange(self.game.map.cols), randrange(self.game.map.rows)
+            # On cherche une case vide (pas un mur et pas la zone de départ)
+            while (pos in self.game.map.world_map) or (pos in self.restricted_area):
+                pos = x, y = randrange(self.game.map.cols), randrange(self.game.map.rows)
+            
+            # On crée l'objet Munition
+            self.add_sprite(AmmoItem(self.game, config['path'], (x + 0.5, y + 0.5), 
+                                     config['type'], config['amount']))
 
     def spawn_npc(self):
         for i in range(self.enemies):
@@ -37,9 +56,7 @@ class ObjectHandler:
             while (pos in self.game.map.world_map) or (pos in self.restricted_area):
                 pos = x, y = randrange(self.game.map.cols), randrange(self.game.map.rows)
             
-            # Créer le monstre
             enemy = npc_class(self.game, pos=(x + 0.5, y + 0.5))
-            # Appliquer les points de vie selon la difficulté
             enemy.health = self.base_hp
             self.add_npc(enemy)
 
@@ -48,17 +65,20 @@ class ObjectHandler:
             self.game.object_renderer.win()
             pg.display.flip()
             pg.time.delay(3000)
-            # Retour au menu principal après victoire
             self.game.menu_active = True
             pg.mouse.set_visible(True)
             self.game.video = cv2.VideoCapture('resources/sprites/doom.mp4')
 
     def update(self):
         self.npc_positions = {npc.map_pos for npc in self.npc_list if npc.alive}
+        
+        # Mise à jour et nettoyage des sprites (munitions ou projectiles)
         for sprite in self.sprite_list[:]:
             sprite.update()
-            if hasattr(sprite, 'expired') and sprite.expired:
+            # On supprime si c'est une boule de feu expirée OU une munition ramassée
+            if (hasattr(sprite, 'expired') and sprite.expired) or (hasattr(sprite, 'picked_up') and sprite.picked_up):
                 self.sprite_list.remove(sprite)
+                
         [npc.update() for npc in self.npc_list]
         self.check_win()
 
