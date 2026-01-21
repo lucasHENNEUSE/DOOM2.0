@@ -3,6 +3,7 @@ import sys
 import cv2
 import math
 import os
+import asyncio  # MODIFICATION : Import pour la compatibilité Web
 from settings import *
 from map import *
 from player import *
@@ -131,7 +132,6 @@ class Game:
                         self.difficulty_menu_active = False
                         self.new_game(selected_diff)
                         
-                        # --- DÉMARRAGE DU CHARGEMENT ---
                         self.loading_active = True
                         self.loading_start_time = pg.time.get_ticks()
                         
@@ -147,7 +147,6 @@ class Game:
 
     def update(self):
         if self.loading_active:
-            # --- MODIFICATION ICI : 10000 ms = 10 secondes ---
             if pg.time.get_ticks() - self.loading_start_time > 10000:
                 self.loading_active = False
                 self.sound.play_theme()
@@ -160,7 +159,7 @@ class Game:
         self.delta_time = self.clock.tick(FPS)
         pg.display.set_caption(f'FPS: {self.clock.get_fps() :.1f}')
 
-    def run(self):
+    async def run(self):  # MODIFICATION : Ajout de async
         while True:
             self.check_events()
             if self.menu_active:
@@ -170,7 +169,7 @@ class Game:
                 self.draw_difficulty_menu()
                 self.clock.tick(60)
             elif self.loading_active:
-                self.update() # Indispensable pour que le chrono avance
+                self.update() 
                 self.object_renderer.draw_loading_screen()
                 pg.display.flip()
             else:
@@ -178,7 +177,9 @@ class Game:
                 self.object_renderer.draw()
                 self.weapon.draw()
                 pg.display.flip()
+            
+            await asyncio.sleep(0)  # MODIFICATION : Indispensable pour le Web
 
 if __name__ == '__main__':
     game = Game()
-    game.run()
+    asyncio.run(game.run())  # MODIFICATION : Lancement via asyncio
