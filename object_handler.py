@@ -16,12 +16,12 @@ class ObjectHandler:
             self.enemies = 5
             self.npc_types = [SoldierNPC]
             self.weights = [100]
-            self.base_hp = 300
+            self.base_hp = 200
         elif difficulty == 'MEDIUM':
             self.enemies = 12
             self.npc_types = [SoldierNPC, CacoDemonNPC, CyberDemonNPC, MVNPC]
             self.weights = [40, 25, 10, 25]
-            self.base_hp = 200
+            self.base_hp = 150
         else: # DIFFICILE
             self.enemies = 20
             self.npc_types = [SoldierNPC, CacoDemonNPC, CyberDemonNPC, MVNPC]
@@ -29,8 +29,11 @@ class ObjectHandler:
             self.base_hp = 100
 
         self.restricted_area = {(i, j) for i in range(10) for j in range(10)}
+        # Le spawn est déplacé dans la méthode setup() appelée par Game
+
+    def setup(self):
         self.spawn_npc()
-        self.spawn_ammo() # On génère les munitions sur la map
+        self.spawn_ammo()
 
     def spawn_ammo(self):
         # On définit les deux munitions : image 0 (shotgun) et image 1 (pistolet)

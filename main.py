@@ -3,7 +3,7 @@ import sys
 import cv2
 import math
 import os
-import asyncio  # Nécessaire pour le web
+import asyncio
 from settings import *
 from map import *
 from player import *
@@ -52,10 +52,18 @@ class Game:
 
     def new_game(self, difficulty='MEDIUM'):
         self.map = Map(self)
+        # 1. On crée le gestionnaire d'objets (sans spawn)
+        self.object_handler = ObjectHandler(self, difficulty)
+        
+        # 2. On crée le joueur (il peut maintenant exister car l'object_handler est là)
         self.player = Player(self)
+        self.player.health = self.object_handler.base_hp
+        
+        # 3. Maintenant on remplit la map (le joueur existe enfin pour les NPCs)
+        self.object_handler.setup()
+        
         self.object_renderer = ObjectRenderer(self)
         self.raycasting = RayCasting(self)
-        self.object_handler = ObjectHandler(self, difficulty)
         self.weapon = Weapon(self)
         self.sound = Sound(self)
         self.pathfinding = PathFinding(self)
@@ -138,7 +146,7 @@ class Game:
         self.delta_time = self.clock.tick(FPS)
         pg.display.set_caption(f'FPS: {self.clock.get_fps() :.1f}')
 
-    async def run(self):  # Modification ici
+    async def run(self):
         while True:
             self.check_events()
             if self.menu_active:
@@ -156,8 +164,8 @@ class Game:
                 self.object_renderer.draw()
                 self.weapon.draw()
                 pg.display.flip()
-            await asyncio.sleep(0)  # Très important pour le web
+            await asyncio.sleep(0)
 
 if __name__ == '__main__':
     game = Game()
-    asyncio.run(game.run())  # Modification ici
+    asyncio.run(game.run())

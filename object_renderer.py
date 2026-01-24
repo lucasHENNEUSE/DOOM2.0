@@ -46,6 +46,58 @@ class ObjectRenderer:
         self.wall_11 = self.get_texture('resources/textures/11.png')
         self.wall_anim_speed = 500
 
+        # --- NOUVEAU : SYSTEME DE VISAGE ---
+        self.face_images = self.load_face_images()
+        try:
+            self.face_grin_image = self.get_texture('resources/textures/face/grin.png', (80, 90))
+        except:
+            self.face_grin_image = self.face_images[0]
+            
+        self.face_grin_time = 0
+        self.grin_duration = 1000
+
+    def load_face_images(self):
+        face_paths = [
+            'resources/textures/face/80_100.png',
+            'resources/textures/face/60_80.png',
+            'resources/textures/face/40_60.png',
+            'resources/textures/face/20_40.png',
+            'resources/textures/face/0_20.png'
+        ]
+        faces = []
+        for path in face_paths:
+            try:
+                faces.append(self.get_texture(path, (80, 90)))
+            except:
+                surf = pg.Surface((80, 90))
+                surf.fill('red')
+                faces.append(surf)
+        return faces
+
+    def draw_player_face(self):
+        # Position en bas à gauche
+        pos_x = 10
+        pos_y = HEIGHT - 100
+        
+        if pg.time.get_ticks() - self.face_grin_time < self.grin_duration:
+            self.screen.blit(self.face_grin_image, (pos_x, pos_y))
+            return
+
+        health_percent = (self.game.player.health / self.game.object_handler.base_hp) * 100
+        
+        if health_percent > 80: idx = 0
+        elif health_percent > 60: idx = 1
+        elif health_percent > 40: idx = 2
+        elif health_percent > 20: idx = 3
+        else: idx = 4
+        
+        look_offset = 0
+        keys = pg.key.get_pressed()
+        if keys[pg.K_q] or keys[pg.K_LEFT]: look_offset = -10
+        if keys[pg.K_d] or keys[pg.K_RIGHT]: look_offset = 10
+        
+        self.screen.blit(self.face_images[idx], (pos_x + look_offset, pos_y))
+
     def draw_loading_screen(self):
         self.screen.blit(self.consignes_img, (0, 0))
         
@@ -78,6 +130,7 @@ class ObjectRenderer:
         self.draw_player_health()
         self.draw_player_ammo()
         self.draw_pickup_message()
+        self.draw_player_face() 
         
         if self.show_interact_msg and not self.victory_mode:
             msg = self.interact_font.render("APPUYEZ SUR E POUR TERMINER", True, 'white')
@@ -119,6 +172,7 @@ class ObjectRenderer:
         if self.show_pickup_msg:
             time_now = pg.time.get_ticks()
             if time_now - self.pickup_msg_time < self.pickup_msg_duration:
+                self.face_grin_time = self.pickup_msg_time
                 msg = self.pickup_font.render("MUNITIONS RÉCUPÉRÉES !", True, 'green')
                 msg_rect = msg.get_rect(center=(WIDTH // 2, HEIGHT // 4))
                 self.screen.blit(msg, msg_rect)
@@ -127,8 +181,9 @@ class ObjectRenderer:
 
     def draw_player_health(self):
         health = str(self.game.player.health)
+        # Décalé à droite du visage (face à 10px + 80px largeur + marge)
         for i, char in enumerate(health):
-            self.screen.blit(self.digits[char], (i * self.digit_size, 10))
+            self.screen.blit(self.digits[char], (100 + i * self.digit_size, HEIGHT - self.digit_size - 10))
 
     def draw_player_ammo(self):
         current_weapon = self.game.weapon.current_weapon

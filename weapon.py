@@ -1,6 +1,7 @@
 from sprite_object import *
 from collections import deque
 import pygame as pg
+import math
 
 class Weapon(AnimatedSprite):
     def __init__(self, game):
@@ -13,6 +14,7 @@ class Weapon(AnimatedSprite):
         self.current_weapon = 'shotgun'
         self.reloading = False
         self.frame_counter = 0
+        self.bob_offset = 0
         self.load_weapon(self.current_weapon)
 
     def load_weapon(self, name):
@@ -32,7 +34,9 @@ class Weapon(AnimatedSprite):
         self.num_images = len(self.images)
         self.animation_time = conf['time']
         self.damage = conf['damage']
-        self.weapon_pos = (HALF_WIDTH - base_w // 2, HEIGHT - base_h)
+        # Position de base fixe
+        self.base_weapon_pos = (HALF_WIDTH - base_w // 2, HEIGHT - base_h)
+        self.weapon_pos = list(self.base_weapon_pos)
 
     def change_weapon(self):
         if not self.reloading:
@@ -54,9 +58,19 @@ class Weapon(AnimatedSprite):
                     self.reloading = False
                     self.frame_counter = 0
 
+    def weapon_bobbing(self):
+        if self.game.player.moving:
+            time = pg.time.get_ticks() * 0.005
+            amplitude = 15
+            self.bob_offset = math.sin(time) * amplitude
+        else:
+            self.bob_offset *= 0.9
+
     def draw(self):
-        self.game.screen.blit(self.images[0], self.weapon_pos)
+        # On dessine avec le décalage sur l'axe X
+        self.game.screen.blit(self.images[0], (self.base_weapon_pos[0] + self.bob_offset, self.base_weapon_pos[1]))
 
     def update(self):
         self.check_animation_time()
         self.animate_shot()
+        self.weapon_bobbing()

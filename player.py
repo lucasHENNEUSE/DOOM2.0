@@ -10,13 +10,15 @@ class Player:
         self.shot = False
         self.health = PLAYER_MAX_HEALTH
         self.rel = 0
+        self.moving = False
         self.health_recovery_delay = 700
         self.time_prev = pg.time.get_ticks()
         self.ammo = {'shotgun': 20, 'pistolet': 50}
         pg.mouse.set_visible(False)
 
     def recover_health(self):
-        if self.check_health_recovery_delay() and self.health < PLAYER_MAX_HEALTH:
+        # Utilisation de la santé max définie par la difficulté dans l'ObjectHandler
+        if self.check_health_recovery_delay() and self.health < self.game.object_handler.base_hp:
             self.health += 1
 
     def check_health_recovery_delay(self):
@@ -55,14 +57,11 @@ class Player:
         
         if (check_x, check_y) in self.game.map.world_map:
             if self.game.map.world_map[(check_x, check_y)] == 11:
-                # VÉRIFICATION : Reste-t-il des monstres vivants ?
                 enemies_alive = any(npc.alive for npc in self.game.object_handler.npc_list)
                 
                 if not enemies_alive:
-                    # VICTOIRE
                     self.game.object_renderer.victory_mode = True
                 else:
-                    # ÉCHEC : Dégâts éclairs (20 points)
                     self.get_damage(20)
                     self.game.object_renderer.trigger_lightning_trap()
 
@@ -96,17 +95,24 @@ class Player:
         speed_sin = speed * sin_a
         speed_cos = speed * cos_a
         keys = pg.key.get_pressed()
+        
+        self.moving = False
         if keys[pg.K_z]:
             dx += speed_cos
             dy += speed_sin
+            self.moving = True
         if keys[pg.K_s]:
             dx += -speed_cos
             dy += -speed_sin
+            self.moving = True
+            
         if keys[pg.K_q]:
             self.angle -= PLAYER_ROT_SPEED * self.game.delta_time
         if keys[pg.K_d]:
             self.angle += PLAYER_ROT_SPEED * self.game.delta_time
+            
         self.check_wall_collision(dx, dy)
+        
         if keys[pg.K_LEFT]:
             self.angle -= PLAYER_ROT_SPEED * self.game.delta_time
         if keys[pg.K_RIGHT]:
